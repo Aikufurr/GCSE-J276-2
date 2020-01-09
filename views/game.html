@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="text/javascript" src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+</head>
+
+<body>
+
+
+    <input type="button" id="roll" value="Roll">
+    <input type="button" id="play" style="display: none;" value="Start">
+    <h1 id="winner"></h1>
+    <p id="round"></p>
+    <p>Scores: <ul id="score">
+
+        </ul>
+    </p>
+
+    <script>
+        let rollEnabled = true;
+
+        let host = window.location.host;
+        let code = window.location.pathname.replace("/", "");
+
+        socket = io.connect(`http://${host}`);
+
+        socket.on("start", (data) => {
+            if (data["code"] == code) {
+                document.getElementById("roll").style.display = "";
+                document.getElementById("play").style.display = "";
+                document.getElementById("score").innerHTML = "";
+                document.getElementById("winner").innerHTML = "";
+                document.getElementById("round").innerHTML = "";
+                rollEnabled = true;
+            }
+
+        })
+
+        socket.on("roll", (data) => {
+            if (data["code"] == code) {
+                console.log(data)
+                document.getElementById("play").style.display = "none";
+                data = data["data"];
+                document.getElementById("round").textContent = `Current Round: ${data["round"]}`;
+                let keys = Object.keys(data);
+
+                document.getElementById("score").textContent = JSON.stringify(keys)
+                document.getElementById("score").innerHTML = "";
+
+                console.log(keys)
+
+                for (let i = 0; i < keys.length; i++) {
+                    if (keys[i] != "round"){
+                        document.getElementById("score").innerHTML += `<li>${data[keys[i]]["name"]}: ${data[keys[i]]["points"]}</li>`;
+                    }
+                }
+            }
+
+        })
+        socket.on("end", (data) => {
+            if (data["code"] == code) {
+                winner = data["winner"];
+                data = data["data"];
+                document.getElementById("round").textContent = `Current Round: ${data["round"]}`;
+                let keys = Object.keys(data);
+
+                document.getElementById("score").textContent = JSON.stringify(keys)
+                document.getElementById("score").innerHTML = "";
+
+                for (let i = 0; i < keys.length; i++) {
+                    if (keys[i] != "round"){
+                        document.getElementById("score").innerHTML += `<li>${data[keys[i]]["name"]}: ${data[keys[i]]["points"]}</li>`;
+                    }
+                }
+
+                document.getElementById("winner").textContent = `Winner: ${winner}`
+                rollEnabled = false;
+                document.getElementById("roll").style.display = "none";
+                document.getElementById("play").style.display = "";
+                document.getElementById("play").value = "Play again";
+            }
+
+        })
+
+        function setCookie(cname, cvalue, exdays) {
+            var d = new Date();
+            d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+            var expires = "expires=" + d.toGMTString();
+            document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+        }
+
+        function getCookie(cname) {
+            var name = cname + "=";
+            var decodedCookie = decodeURIComponent(document.cookie);
+            var ca = decodedCookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return "";
+        }
+
+        function checkCookie() {
+            var user = getCookie("token");
+            if (user != "") {
+                alert("Welcome again " + user);
+            } else {
+                user = prompt("Please enter your name:", "");
+                if (user != "" && user != null) {
+                    setCookie("username", user, 30);
+                }
+            }
+        }
+
+        document.getElementById("roll").addEventListener("click", (e) => {
+            if (rollEnabled) {
+                socket.emit("roll", { "code": code, "token": getCookie("token") })
+            }
+        })
+        document.getElementById("play").addEventListener("click", (e) => {
+            socket.emit("start", { "code": code, "token": getCookie("token") })
+        })
+    </script>
+
+</body>
+
+</html>

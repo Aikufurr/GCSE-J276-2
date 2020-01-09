@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="text/javascript" src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            text-align: center;
+        }
+
+        input[type=text],
+        input[type=password] {
+            text-align: center;
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: rgb(31, 143, 35);
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        .container {
+            padding: 16px;
+        }
+
+        span.psw {
+            float: right;
+            padding-top: 16px;
+        }
+
+        .modal {
+            display: block;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto 15% auto;
+            border: 1px solid #888;
+            width: 50%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="modal">
+
+        <!-- <form id="form" class="modal-content"> -->
+        <form id="form" action="/login" method="POST" class="modal-content">
+
+            <div class="container">
+                <label for="uname"><b>Username</b></label>
+                <input type="text" placeholder="Enter Username" id="name" name="uname" required>
+
+                <label for="psw"><b>Password</b></label>
+                <input type="password" placeholder="Enter Password" id="psk" name="psw" required>
+
+                <input type="hidden" id="code" name="code">
+
+                <button type="submit" id="login">Login</button>
+            </div>
+        </form>
+        <!-- </form> -->
+    </div>
+
+    <script>
+        let host = window.location.host;
+        let code = window.location.pathname.replace("/", "");
+        document.getElementById("code").value = code;
+
+        // socket.on("login", (data) => {
+        //     console.log(data)
+        //     if ("success" in data) {
+        //         window.sessionStorage.setItem("token", data["success"]);
+        //         window.location.replace(`http://${host}/${code}`)
+        //     }
+        // })
+
+        // document.getElementById("form").addEventListener("submit", (e) => {
+        //     e.preventDefault();
+        //     socket.emit("login", {
+        //         "uname": document.getElementById("name").value,
+        //         "psw": document.getElementById("psk").value,
+        //         "code": code
+        //     });
+        // })
+    </script>
+
+</body>
+
+</html>
