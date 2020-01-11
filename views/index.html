@@ -1,1 +1,203 @@
-hewwo
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="text/javascript" src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+    <style>
+        html,
+        body {
+            height: 100%;
+            width: 99%;
+            padding: 5px;
+            font-family: Verdana, sans-serif;
+            font-size: 15px;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 0.5fr;
+            grid-column-gap: 20px;
+            grid-row-gap: 20px;
+            justify-items: stretch;
+            align-items: stretch;
+            width: 100%
+        }
+
+        .grid-item {
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            margin-bottom: 50px;
+            font-size: 30px;
+            text-align: center;
+            height: 100vh;
+            overflow: auto;
+        }
+
+        .btn:hover {
+            box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+        }
+
+        .btn {
+            color: #fff !important;
+            background-color: #2196F3 !important;
+            border: none;
+            display: inline-block;
+            padding: 8px 16px;
+            vertical-align: middle;
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+            background-color: inherit;
+            text-align: center;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <h1>Dice Game</h1>
+
+    <p>For example purposes, there are only two user accounts:
+        <ul>
+            <li>Username: nicole<br>Password: tags</li>
+            <br>
+            <li>Username: kade<br>Password: nintendo</li>
+        </ul>
+    </p>
+
+    <h2>How to use this website:</h2>
+
+    <p>To start a new game, click the "New Game" button below, you will be given a url and room code to give to your
+        other friend, on the second computer go to the url with the room code or alternativly select the game in the
+        game list below, you will both be required to log into those user accounts and you both can't use the same one.
+        When in a game you will see a button saying "Join" click it to join that specifc game, once two players have
+        joined a room the "Start" button will appear, once either party clicks the button the game will start.
+    </p>
+
+    <input type="button" class="btn" id="createGame" value="New Game">
+
+    <br>
+    <br>
+
+    <div class="container">
+        <div class="grid-item">Game List:
+            <ul id="gameList">
+
+            </ul>
+        </div>
+        <div class="grid-item">Current Leaderboard:
+            <ul id="leaderboard">
+
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        Array.prototype.remove = function () {
+            var what, a = arguments,
+                L = a.length,
+                ax;
+            while (L && this.length) {
+                what = a[--L];
+                while ((ax = this.indexOf(what)) !== -1) {
+                    this.splice(ax, 1);
+                }
+            }
+            return this;
+        };
+
+        let host = window.location.host;
+
+        socket = io.connect(`http://${host}`);
+
+        socket.on("index", (data) => {
+            let games = data["games"];
+
+            let Gkeys = Object.keys(games);
+
+            document.getElementById("gameList").innerHTML = "";
+
+            for (let i = 0; i < Gkeys.length; i++) {
+                let Gusers = Object.keys(games[Gkeys[i]])
+
+                Gusers.remove("misc");
+
+                document.getElementById("gameList").innerHTML += `<li><a href="/${Gkeys[i]}">${Gkeys[i]} (${Gusers.length}/2)</a></li>`;
+            }
+
+
+            let wins = data["leaderboard"];
+
+            let gWins = Object.keys(wins);
+
+            document.getElementById("leaderboard").innerHTML = "";
+
+            let arr = Object.entries(wins).sort(([key1, val1], [key2, val2]) => val2 - val1)
+
+            for (let i = 0; i < arr.length; i++) {
+                document.getElementById("leaderboard").innerHTML += `<li>${arr[i][0]}: ${arr[i][1]}</li>`;
+            }
+        });
+
+        socket.emit("index");
+
+
+        function setCookie(cname, cvalue, exdays) {
+            var d = new Date();
+            d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+            var expires = "expires=" + d.toGMTString();
+            document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+        }
+
+        function getCookie(cname) {
+            var name = cname + "=";
+            var decodedCookie = decodeURIComponent(document.cookie);
+            var ca = decodedCookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return "";
+        }
+
+        function checkCookie() {
+            var user = getCookie("token");
+            if (user != "") {
+                alert("Welcome again " + user);
+            } else {
+                user = prompt("Please enter your name:", "");
+                if (user != "" && user != null) {
+                    setCookie("username", user, 30);
+                }
+            }
+        }
+
+        document.getElementById("createGame").addEventListener("click", (e) => {
+            function getRandomCode() {
+                var letters = '0123456789ABCDEFGHIKGLMNOPQRSTUVWXYZ';
+                var code = '';
+                for (var i = 0; i < 6; i++) {
+                    code += letters[Math.floor(Math.random() * letters.length)];
+                }
+                return code;
+            }
+
+            window.location.href = (`http://${host}/${getRandomCode()}`);
+        })
+    </script>
+
+</body>
+
+</html>

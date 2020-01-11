@@ -4,21 +4,66 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script type="text/javascript" src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+    <style>
+        .btn:hover {
+            box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+        }
+
+        .btn {
+            color: #fff !important;
+            background-color: #2196F3 !important;
+            border: none;
+            display: inline-block;
+            padding: 8px 16px;
+            vertical-align: middle;
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+            background-color: inherit;
+            text-align: center;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+    </style>
 </head>
 
 <body>
 
 
-    <input type="button" id="roll" value="Roll">
-    <input type="button" id="play" style="display: none;" value="Start">
+    <input type="button" class="btn" id="join" value="Join">
+    <input type="button" class="btn" id="leave" style="display: none;" value="Leave">
+    <input type="button" class="btn" id="roll" style="display: none;" value="Roll">
+    <input type="button" class="btn" id="play" style="display: none;" style="display: '';" value="Start">
+    <input type="button" class="btn" id="restart" style="display: none;" value="Play Again">
+    <h3 id="status"></h3>
+
     <h1 id="winner"></h1>
     <p id="round"></p>
-    <p>Scores: <ul id="score">
+    <p id="pscore" style="display: none;">Scores:
+        <ul id="score">
+
+        </ul>
+    </p>
+    <p>Connected Users:
+        <ul id="cUsers">
 
         </ul>
     </p>
 
     <script>
+        Array.prototype.remove = function () {
+            var what, a = arguments,
+                L = a.length,
+                ax;
+            while (L && this.length) {
+                what = a[--L];
+                while ((ax = this.indexOf(what)) !== -1) {
+                    this.splice(ax, 1);
+                }
+            }
+            return this;
+        };
+
         let rollEnabled = true;
 
         let host = window.location.host;
@@ -27,62 +72,237 @@
         socket = io.connect(`http://${host}`);
 
         socket.on("start", (data) => {
+            console.log(data["data"])
             if (data["code"] == code) {
                 document.getElementById("roll").style.display = "";
-                document.getElementById("play").style.display = "";
+                document.getElementById("leave").style.display = "";
+                document.getElementById("play").style.display = "none";
+                document.getElementById("join").style.display = "none";
+                document.getElementById("restart").style.display = "none";
+                document.getElementById("pscore").style.display = "";
                 document.getElementById("score").innerHTML = "";
                 document.getElementById("winner").innerHTML = "";
+                document.getElementById("status").innerHTML = "";
                 document.getElementById("round").innerHTML = "";
                 rollEnabled = true;
+
+                if (data["data"]["misc"]["turn"] != getCookie("token")) {
+                    document.getElementById("roll").disabled = true;
+                } else {
+                    document.getElementById("roll").disabled = false;
+                }
             }
 
         })
 
-        socket.on("roll", (data) => {
+        socket.on("userUpdateEvent", (data) => {
+            console.log(data)
             if (data["code"] == code) {
-                console.log(data)
-                document.getElementById("play").style.display = "none";
-                data = data["data"];
-                document.getElementById("round").textContent = `Current Round: ${data["round"]}`;
-                let keys = Object.keys(data);
+
+                let keys = Object.keys(data["data"]);
 
                 document.getElementById("score").textContent = JSON.stringify(keys)
                 document.getElementById("score").innerHTML = "";
+                document.getElementById("status").innerHTML = "";
 
-                console.log(keys)
+                document.getElementById("cUsers").textContent = JSON.stringify(keys)
+                document.getElementById("cUsers").innerHTML = "";
+
+                keys.remove("misc");
 
                 for (let i = 0; i < keys.length; i++) {
-                    if (keys[i] != "round"){
-                        document.getElementById("score").innerHTML += `<li>${data[keys[i]]["name"]}: ${data[keys[i]]["points"]}</li>`;
+                    document.getElementById("cUsers").innerHTML += `<li>${data["data"][keys[i]]["name"]}</li>`;
+                }
+
+                keys.remove("misc");
+
+                if (keys.length == 2) {
+                    document.getElementById("roll").style.display = "none";
+                    document.getElementById("play").style.display = "";
+                    document.getElementById("leave").style.display = "";
+                    document.getElementById("restart").style.display = "none";
+                    document.getElementById("pscore").style.display = "none";
+                    document.getElementById("join").style.display = "none";
+                    document.getElementById("score").innerHTML = "";
+                    document.getElementById("winner").innerHTML = "";
+                    document.getElementById("status").innerHTML = "";
+                    document.getElementById("round").innerHTML = "";
+                } else {
+                    document.getElementById("roll").style.display = "none";
+                    document.getElementById("leave").style.display = "";
+                    document.getElementById("play").style.display = "none";
+                    document.getElementById("join").style.display = "none";
+                    document.getElementById("restart").style.display = "none";
+                    document.getElementById("pscore").style.display = "none";
+                    document.getElementById("score").innerHTML = "";
+                    document.getElementById("winner").innerHTML = "";
+                    document.getElementById("status").innerHTML = "";
+                    document.getElementById("round").innerHTML = "";
+
+                    if (!(getCookie("token") in data["data"])) {
+                        document.getElementById("leave").style.display = "none";
+                        document.getElementById("join").style.display = "";
                     }
                 }
             }
 
         })
+
+        socket.on("rollDouble", (data) => {
+            document.getElementById("status").innerHTML = "You rolled a double! Roll again!";
+            document.getElementById("roll").style.display = "";
+            document.getElementById("roll").disabled = false;
+        });
+
+        socket.on("roll", (data) => {
+            if (data["code"] == code) {
+                console.log(data)
+                let turn = data["turn"];
+                data = data["data"];
+                document.getElementById("round").textContent = `Current Round: ${Math.floor(data["misc"]["round"] / 2)}`;
+                let keys = Object.keys(data);
+
+                keys.remove("misc");
+
+                document.getElementById("score").textContent = JSON.stringify(keys)
+                document.getElementById("score").innerHTML = "";
+                document.getElementById("score").style.display = "";
+                document.getElementById("status").innerHTML = "";
+
+                console.log(keys)
+
+                for (let i = 0; i < keys.length; i++) {
+                    document.getElementById("score").innerHTML += `<li>${data[keys[i]]["name"]}: ${data[keys[i]]["points"]}</li>`;
+                }
+
+                if (turn != getCookie("token")) {
+                    document.getElementById("roll").disabled = true;
+                } else {
+                    document.getElementById("roll").disabled = false;
+                }
+
+            }
+
+        });
+
+
+
         socket.on("end", (data) => {
             if (data["code"] == code) {
                 winner = data["winner"];
                 data = data["data"];
-                document.getElementById("round").textContent = `Current Round: ${data["round"]}`;
+                document.getElementById("round").textContent = `Current Round: ${Math.floor(data["misc"]["round"] / 2)}`;
                 let keys = Object.keys(data);
+                keys.remove("misc");
 
                 document.getElementById("score").textContent = JSON.stringify(keys)
                 document.getElementById("score").innerHTML = "";
 
                 for (let i = 0; i < keys.length; i++) {
-                    if (keys[i] != "round"){
-                        document.getElementById("score").innerHTML += `<li>${data[keys[i]]["name"]}: ${data[keys[i]]["points"]}</li>`;
-                    }
+                    document.getElementById("score").innerHTML += `<li>${data[keys[i]]["name"]}: ${data[keys[i]]["points"]}</li>`;
                 }
 
                 document.getElementById("winner").textContent = `Winner: ${winner}`
                 rollEnabled = false;
                 document.getElementById("roll").style.display = "none";
-                document.getElementById("play").style.display = "";
-                document.getElementById("play").value = "Play again";
+                document.getElementById("restart").style.display = "";
             }
 
-        })
+        });
+
+        socket.emit("init", { "code": code, "token": getCookie("token") });
+
+        socket.on("init", (data) => {
+            console.log(data)
+            try {
+                let turn = data["turn"];
+                data = data["data"];
+                round = data["misc"]["round"] || 0;
+                let keys = Object.keys(data);
+
+                document.getElementById("roll").style.display = "none";
+                document.getElementById("play").style.display = "none";
+                document.getElementById("leave").style.display = "none";
+                document.getElementById("join").style.display = "";
+                document.getElementById("restart").style.display = "none";
+                document.getElementById("pscore").style.display = "none";
+                document.getElementById("score").style.display = "none";
+                document.getElementById("winner").innerHTML = "";
+                document.getElementById("status").innerHTML = "";
+
+                document.getElementById("score").textContent = JSON.stringify(keys)
+                document.getElementById("score").innerHTML = "";
+                document.getElementById("status").innerHTML = "";
+
+                document.getElementById("cUsers").textContent = JSON.stringify(keys)
+                document.getElementById("cUsers").innerHTML = "";
+
+                keys.remove("misc");
+
+                for (let i = 0; i < keys.length; i++) {
+                    document.getElementById("cUsers").innerHTML += `<li>${data[keys[i]]["name"]}</li>`;
+                }
+                for (let i = 0; i < keys.length; i++) {
+                    document.getElementById("score").innerHTML += `<li>${data[keys[i]]["name"]}: ${data[keys[i]]["points"]}</li>`;
+                }
+
+                if (keys.length == 2 && getCookie("token") in data) {
+                    document.getElementById("round").textContent = `Current Round: ${Math.floor(round / 2)}`;
+                    document.getElementById("roll").style.display = "";
+                    document.getElementById("play").style.display = "none";
+                    document.getElementById("leave").style.display = "";
+                    document.getElementById("join").style.display = "none";
+                    document.getElementById("restart").style.display = "none";
+                    document.getElementById("pscore").style.display = "";
+                    document.getElementById("score").style.display = "";
+                } else if (getCookie("token") in data) {
+                    document.getElementById("roll").style.display = "none";
+                    document.getElementById("leave").style.display = "";
+                    document.getElementById("play").style.display = "none";
+                    document.getElementById("join").style.display = "none";
+                    document.getElementById("restart").style.display = "none";
+                    document.getElementById("pscore").style.display = "none";
+                    document.getElementById("score").style.display = "none";
+                }
+                console.log(turn)
+                if (turn != getCookie("token")) {
+                    document.getElementById("roll").disabled = true;
+                } else {
+                    document.getElementById("roll").disabled = false;
+                }
+            } catch (e) { console.log(e) }
+        });
+
+        socket.on("endAgain", (data) => {
+            console.log(data)
+            if (data["code"] == code) {
+                document.getElementById("status").innerHTML = "You have both ended up with the same score! Keep rolling till one of you wins!";
+                let turn = data["turn"];
+                data = data["data"];
+                document.getElementById("round").textContent = `Current Round: ${Math.floor(data["misc"]["round"] / 2)}`;
+                let keys = Object.keys(data);
+
+                keys.remove("misc");
+
+                document.getElementById("score").textContent = JSON.stringify(keys)
+                document.getElementById("score").innerHTML = "";
+
+                console.log(keys)
+                console.log(turn)
+
+                for (let i = 0; i < keys.length; i++) {
+                    if (keys[i] != "round") {
+                        document.getElementById("score").innerHTML += `<li>${data[keys[i]]["name"]}: ${data[keys[i]]["points"]}</li>`;
+                    }
+                }
+
+                if (turn != getCookie("token")) {
+                    document.getElementById("roll").disabled = true;
+                } else {
+                    document.getElementById("roll").disabled = false;
+                }
+            }
+        });
 
         function setCookie(cname, cvalue, exdays) {
             var d = new Date();
@@ -121,12 +341,40 @@
 
         document.getElementById("roll").addEventListener("click", (e) => {
             if (rollEnabled) {
-                socket.emit("roll", { "code": code, "token": getCookie("token") })
+                socket.emit("roll", {
+                    "code": code,
+                    "token": getCookie("token")
+                })
             }
-        })
+        });
         document.getElementById("play").addEventListener("click", (e) => {
-            socket.emit("start", { "code": code, "token": getCookie("token") })
-        })
+            socket.emit("start", {
+                "reset": 0,
+                "code": code,
+                "token": getCookie("token")
+            })
+        });
+        document.getElementById("restart").addEventListener("click", (e) => {
+            socket.emit("start", {
+                "reset": 1,
+                "code": code,
+                "token": getCookie("token")
+            })
+        });
+        document.getElementById("join").addEventListener("click", (e) => {
+            socket.emit("userUpdateEvent", {
+                "type": "join",
+                "code": code,
+                "token": getCookie("token")
+            })
+        });
+        document.getElementById("leave").addEventListener("click", (e) => {
+            socket.emit("userUpdateEvent", {
+                "type": "leave",
+                "code": code,
+                "token": getCookie("token")
+            })
+        });
     </script>
 
 </body>
