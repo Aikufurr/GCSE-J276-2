@@ -100,6 +100,7 @@
     </div>
 
     <script>
+        // Remove from an array by value
         Array.prototype.remove = function () {
             var what, a = arguments,
                 L = a.length,
@@ -113,17 +114,27 @@
             return this;
         };
 
+        // Get the host and store it to a var, eg 127.0.0.1:5001
         let host = window.location.host;
 
-        socket = io.connect(`http://${host}`);
+        // Get the protocal and store it, allows for both http and https. Note, if https were to be uses, main index.js needs to be changed so sockets lisen on https
+        let protocal = window.location.protocol;
 
+        // Connect to the backend web socket
+        socket = io.connect(`${protocal}//${host}`);
+
+        // When the index is called
         socket.on("index", (data) => {
+
+            // Current games
             let games = data["games"];
 
             let Gkeys = Object.keys(games);
 
+            // Set the gameList to be empty
             document.getElementById("gameList").innerHTML = "";
 
+            // For each game, get it's room code and current amount of players and add it to the ul
             for (let i = 0; i < Gkeys.length; i++) {
                 let Gusers = Object.keys(games[Gkeys[i]])
 
@@ -132,20 +143,24 @@
                 document.getElementById("gameList").innerHTML += `<li><a href="/${Gkeys[i]}">${Gkeys[i]} (${Gusers.length}/2)</a></li>`;
             }
 
-
+            // Current leaderboard
             let wins = data["leaderboard"];
 
             let gWins = Object.keys(wins);
 
+            // Set the leaderboard to be empty
             document.getElementById("leaderboard").innerHTML = "";
 
+            // Sort the winning by their value 
             let arr = Object.entries(wins).sort(([key1, val1], [key2, val2]) => val2 - val1)
 
+            // Loop through the list and display in ranked order
             for (let i = 0; i < arr.length; i++) {
                 document.getElementById("leaderboard").innerHTML += `<li>${arr[i][0]}: ${arr[i][1]}</li>`;
             }
         });
 
+        // Request the index data
         socket.emit("index");
 
 
@@ -172,18 +187,7 @@
             return "";
         }
 
-        function checkCookie() {
-            var user = getCookie("token");
-            if (user != "") {
-                alert("Welcome again " + user);
-            } else {
-                user = prompt("Please enter your name:", "");
-                if (user != "" && user != null) {
-                    setCookie("username", user, 30);
-                }
-            }
-        }
-
+        // Add an event listener for when the "New Game" button is clicked
         document.getElementById("createGame").addEventListener("click", (e) => {
             function getRandomCode() {
                 var letters = '0123456789ABCDEFGHIKGLMNOPQRSTUVWXYZ';
@@ -194,7 +198,8 @@
                 return code;
             }
 
-            window.location.href = (`http://${host}/${getRandomCode()}`);
+            // Setting the href acts like clicking on an "a" link so user can go back to the index
+            window.location.href = (`${protocal}//${host}/${getRandomCode()}`);
         })
     </script>
 

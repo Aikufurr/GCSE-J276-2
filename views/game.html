@@ -24,6 +24,12 @@
             cursor: pointer;
             white-space: nowrap;
         }
+
+        .btn:disabled {
+            border: 1px solid #999999;
+            background-color: #cccccc !important;
+            color: #666666 !important;
+        }
     </style>
 </head>
 
@@ -51,6 +57,7 @@
     </p>
 
     <script>
+        // Remove from an array by value
         Array.prototype.remove = function () {
             var what, a = arguments,
                 L = a.length,
@@ -68,13 +75,18 @@
 
         let host = window.location.host;
         let code = window.location.pathname.replace("/", "");
+        let protocol = window.location.protocol;
 
-        socket = io.connect(`http://${host}`);
+        socket = io.connect(`${protocol}//${host}`);
 
+        // When the backend sends the start command
         socket.on("start", (data) => {
-            console.log(data["data"])
+            // If the game is the current room's code
             if (data["code"] == code) {
+
+                // Set buttons and text
                 document.getElementById("roll").style.display = "";
+                document.getElementById("roll").setAttribute("func", "double");
                 document.getElementById("leave").style.display = "";
                 document.getElementById("play").style.display = "none";
                 document.getElementById("join").style.display = "none";
@@ -86,6 +98,7 @@
                 document.getElementById("round").innerHTML = "";
                 rollEnabled = true;
 
+                // If it's the users turn, enable the button, else disable it
                 if (data["data"]["misc"]["turn"] != getCookie("token")) {
                     document.getElementById("roll").disabled = true;
                 } else {
@@ -93,29 +106,26 @@
                 }
             }
 
-        })
+        });
 
+        // If a user leaves or joins
         socket.on("userUpdateEvent", (data) => {
-            console.log(data)
+            // If the game is the current room's code
             if (data["code"] == code) {
-
                 let keys = Object.keys(data["data"]);
 
-                document.getElementById("score").textContent = JSON.stringify(keys)
                 document.getElementById("score").innerHTML = "";
                 document.getElementById("status").innerHTML = "";
-
-                document.getElementById("cUsers").textContent = JSON.stringify(keys)
                 document.getElementById("cUsers").innerHTML = "";
 
                 keys.remove("misc");
 
+                // Set the current connected users list to the current users in the game
                 for (let i = 0; i < keys.length; i++) {
                     document.getElementById("cUsers").innerHTML += `<li>${data["data"][keys[i]]["name"]}</li>`;
                 }
 
-                keys.remove("misc");
-
+                // If there are two users in the game
                 if (keys.length == 2) {
                     document.getElementById("roll").style.display = "none";
                     document.getElementById("play").style.display = "";
@@ -148,33 +158,36 @@
 
         })
 
+        // If the user has rolled a double
         socket.on("rollDouble", (data) => {
             document.getElementById("status").innerHTML = "You rolled a double! Roll again!";
             document.getElementById("roll").style.display = "";
             document.getElementById("roll").disabled = false;
+            document.getElementById("roll").setAttribute("func", "single"); // For use when emmiting to say whether to roll a single or double
         });
 
+        // When a user rolls
         socket.on("roll", (data) => {
+            // If the game is the current room's code
             if (data["code"] == code) {
-                console.log(data)
                 let turn = data["turn"];
                 data = data["data"];
-                document.getElementById("round").textContent = `Current Round: ${Math.floor(data["misc"]["round"] / 2)}`;
+                document.getElementById("round").textContent = `Current Round: ${Math.floor(data["misc"]["round"] / 2)}`; // This is so each player has to roll for it to count as a round
+                document.getElementById("roll").setAttribute("func", "double"); // 
                 let keys = Object.keys(data);
 
                 keys.remove("misc");
 
-                document.getElementById("score").textContent = JSON.stringify(keys)
                 document.getElementById("score").innerHTML = "";
                 document.getElementById("score").style.display = "";
                 document.getElementById("status").innerHTML = "";
 
-                console.log(keys)
-
+                // Set the scores list to each users name and points
                 for (let i = 0; i < keys.length; i++) {
                     document.getElementById("score").innerHTML += `<li>${data[keys[i]]["name"]}: ${data[keys[i]]["points"]}</li>`;
                 }
 
+                // If it's the users turn, enable the button, else disable it
                 if (turn != getCookie("token")) {
                     document.getElementById("roll").disabled = true;
                 } else {
@@ -186,18 +199,20 @@
         });
 
 
-
+        // When the game has fully ended and the scores are not the same
         socket.on("end", (data) => {
+            // If the game is the current room's code
             if (data["code"] == code) {
                 winner = data["winner"];
                 data = data["data"];
-                document.getElementById("round").textContent = `Current Round: ${Math.floor(data["misc"]["round"] / 2)}`;
+                document.getElementById("round").textContent = `Current Round: ${Math.floor(data["misc"]["round"] / 2)}`; // This is so each player has to roll for it to count as a round
                 let keys = Object.keys(data);
                 keys.remove("misc");
 
                 document.getElementById("score").textContent = JSON.stringify(keys)
                 document.getElementById("score").innerHTML = "";
 
+                // Set the scores list to each users name and points
                 for (let i = 0; i < keys.length; i++) {
                     document.getElementById("score").innerHTML += `<li>${data[keys[i]]["name"]}: ${data[keys[i]]["points"]}</li>`;
                 }
@@ -210,10 +225,11 @@
 
         });
 
+        // Request from the backend the current state of the game
         socket.emit("init", { "code": code, "token": getCookie("token") });
 
+        // When the backend returns the state
         socket.on("init", (data) => {
-            console.log(data)
             try {
                 let turn = data["turn"];
                 data = data["data"];
@@ -230,24 +246,25 @@
                 document.getElementById("winner").innerHTML = "";
                 document.getElementById("status").innerHTML = "";
 
-                document.getElementById("score").textContent = JSON.stringify(keys)
                 document.getElementById("score").innerHTML = "";
                 document.getElementById("status").innerHTML = "";
 
-                document.getElementById("cUsers").textContent = JSON.stringify(keys)
                 document.getElementById("cUsers").innerHTML = "";
 
                 keys.remove("misc");
 
+                // Set the current connected users list to the current users in the game
                 for (let i = 0; i < keys.length; i++) {
                     document.getElementById("cUsers").innerHTML += `<li>${data[keys[i]]["name"]}</li>`;
                 }
+                // Set the scores list to each users name and points
                 for (let i = 0; i < keys.length; i++) {
                     document.getElementById("score").innerHTML += `<li>${data[keys[i]]["name"]}: ${data[keys[i]]["points"]}</li>`;
                 }
 
+                // If there are two players and the user is in the game, allow them to use it
                 if (keys.length == 2 && getCookie("token") in data) {
-                    document.getElementById("round").textContent = `Current Round: ${Math.floor(round / 2)}`;
+                    document.getElementById("round").textContent = `Current Round: ${Math.floor(round / 2)}`; // This is so each player has to roll for it to count as a round
                     document.getElementById("roll").style.display = "";
                     document.getElementById("play").style.display = "none";
                     document.getElementById("leave").style.display = "";
@@ -256,6 +273,7 @@
                     document.getElementById("pscore").style.display = "";
                     document.getElementById("score").style.display = "";
                 } else if (getCookie("token") in data) {
+                    // Show them the buttons to leave
                     document.getElementById("roll").style.display = "none";
                     document.getElementById("leave").style.display = "";
                     document.getElementById("play").style.display = "none";
@@ -264,7 +282,8 @@
                     document.getElementById("pscore").style.display = "none";
                     document.getElementById("score").style.display = "none";
                 }
-                console.log(turn)
+
+                // If it's the users turn, enable the button, else disable it
                 if (turn != getCookie("token")) {
                     document.getElementById("roll").disabled = true;
                 } else {
@@ -273,29 +292,28 @@
             } catch (e) { console.log(e) }
         });
 
+        // If the round has reached the end but the scores are the same
         socket.on("endAgain", (data) => {
-            console.log(data)
+            // If the game is the current room's code
             if (data["code"] == code) {
                 document.getElementById("status").innerHTML = "You have both ended up with the same score! Keep rolling till one of you wins!";
+                document.getElementById("roll").setAttribute("func", "single"); // For use when emmiting to say whether to roll a single or double
                 let turn = data["turn"];
                 data = data["data"];
-                document.getElementById("round").textContent = `Current Round: ${Math.floor(data["misc"]["round"] / 2)}`;
+                document.getElementById("round").textContent = `Current Round: ${Math.floor(data["misc"]["round"] / 2)}`; // This is so each player has to roll for it to count as a round
                 let keys = Object.keys(data);
 
                 keys.remove("misc");
 
-                document.getElementById("score").textContent = JSON.stringify(keys)
                 document.getElementById("score").innerHTML = "";
 
-                console.log(keys)
-                console.log(turn)
 
+                // Set the scores list to each users name and points
                 for (let i = 0; i < keys.length; i++) {
-                    if (keys[i] != "round") {
-                        document.getElementById("score").innerHTML += `<li>${data[keys[i]]["name"]}: ${data[keys[i]]["points"]}</li>`;
-                    }
+                    document.getElementById("score").innerHTML += `<li>${data[keys[i]]["name"]}: ${data[keys[i]]["points"]}</li>`;
                 }
 
+                // If it's the users turn, enable the button, else disable it
                 if (turn != getCookie("token")) {
                     document.getElementById("roll").disabled = true;
                 } else {
@@ -327,23 +345,13 @@
             return "";
         }
 
-        function checkCookie() {
-            var user = getCookie("token");
-            if (user != "") {
-                alert("Welcome again " + user);
-            } else {
-                user = prompt("Please enter your name:", "");
-                if (user != "" && user != null) {
-                    setCookie("username", user, 30);
-                }
-            }
-        }
-
         document.getElementById("roll").addEventListener("click", (e) => {
             if (rollEnabled) {
+                let func = document.getElementById("roll").getAttribute("func");
                 socket.emit("roll", {
                     "code": code,
-                    "token": getCookie("token")
+                    "token": getCookie("token"),
+                    "func": func
                 })
             }
         });
