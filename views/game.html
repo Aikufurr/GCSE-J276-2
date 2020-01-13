@@ -8,7 +8,7 @@
         .btn:hover {
             box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
         }
-
+        
         .btn {
             color: #fff !important;
             background-color: #2196F3 !important;
@@ -24,7 +24,7 @@
             cursor: pointer;
             white-space: nowrap;
         }
-
+        
         .btn:disabled {
             border: 1px solid #999999;
             background-color: #cccccc !important;
@@ -58,7 +58,7 @@
 
     <script>
         // Remove from an array by value
-        Array.prototype.remove = function () {
+        Array.prototype.remove = function() {
             var what, a = arguments,
                 L = a.length,
                 ax;
@@ -226,7 +226,10 @@
         });
 
         // Request from the backend the current state of the game
-        socket.emit("init", { "code": code, "token": getCookie("token") });
+        socket.emit("init", {
+            "code": code,
+            "token": getCookie("token")
+        });
 
         // When the backend returns the state
         socket.on("init", (data) => {
@@ -289,7 +292,9 @@
                 } else {
                     document.getElementById("roll").disabled = false;
                 }
-            } catch (e) { console.log(e) }
+            } catch (e) {
+                console.log(e)
+            }
         });
 
         // If the round has reached the end but the scores are the same
