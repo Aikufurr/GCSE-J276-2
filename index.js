@@ -20,7 +20,7 @@ const gameRounds = 10; // Rounds of game * 2 so each player has to roll for it t
 
 
 // Remove from an array by value
-Array.prototype.remove = function () {
+Array.prototype.remove = function() {
     var what, a = arguments,
         L = a.length,
         ax;
@@ -125,9 +125,9 @@ app.post("/login", (req, res) => {
         if ((users[key]["name"] === req.body["uname"]) && (users[key]["psk"] === req.body["psw"])) { // If the passed username/psk matches any in the object
             // Set a cookie with the user's UUID
             res.cookie('token', key, {
-                httpOnly: false
-            })
-            // Redirect them to the room code
+                    httpOnly: false
+                })
+                // Redirect them to the room code
             res.redirect(`/${req.body["code"]}`)
             return;
         }
@@ -394,7 +394,7 @@ io.sockets.on('connection', (socket) => {
             }
 
             // Sort the array from highest to lowest
-            arrSorted.sort(function (a, b) { return b - a });
+            arrSorted.sort(function(a, b) { return b - a });
 
             // Loop through each user in the game and if their score matches the 0th index of the sorted array declare them the winner--
             //    --and increase their wins by 1, then save to the json file
