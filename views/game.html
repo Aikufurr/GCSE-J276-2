@@ -3,8 +3,13 @@
 
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script type="text/javascript" src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+    <script type="text/javascript" src="/resources/socketio.js"></script>
     <style>
+        body,
+        html {
+            padding: 5px;
+        }
+
         .btn:hover {
             box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
         }
@@ -43,6 +48,23 @@
     <input type="button" class="btn" id="restart" style="display: none;" value="Play Again">
     <h3 id="status"></h3>
 
+
+    <h4 id="turn"></h4>
+    <image src="/resources/rolling.svg" id="rolling" style="display: none;" height="90" />
+    <image src="/resources/1.svg" id="die1" style="display: none;" width="90" height="90" />
+    <image src="/resources/1.svg" id="die1-1" style="display: none;" width="90" height="90" />
+    <image src="/resources/2.svg" id="die2" style="display: none;" width="90" height="90" />
+    <image src="/resources/2.svg" id="die2-1" style="display: none;" width="90" height="90" />
+    <image src="/resources/3.svg" id="die3" style="display: none;" width="90" height="90" />
+    <image src="/resources/3.svg" id="die3-1" style="display: none;" width="90" height="90" />
+    <image src="/resources/4.svg" id="die4" style="display: none;" width="90" height="90" />
+    <image src="/resources/4.svg" id="die4-1" style="display: none;" width="90" height="90" />
+    <image src="/resources/5.svg" id="die5" style="display: none;" width="90" height="90" />
+    <image src="/resources/5.svg" id="die5-1" style="display: none;" width="90" height="90" />
+    <image src="/resources/6.svg" id="die6" style="display: none;" width="90" height="90" />
+    <image src="/resources/6.svg" id="die6-1" style="display: none;" width="90" height="90" />
+    <h5 id="diestatus"></h5>
+
     <h1 id="winner"></h1>
     <p id="round"></p>
     <p id="pscore" style="display: none;">Scores:
@@ -57,6 +79,27 @@
     </p>
 
     <script>
+        function rollImage() {
+            let rot = 0;
+            let flip = false;
+            setInterval((_) => {
+                if (!flip) {
+                    rot += 10
+                } else {
+                    rot -= 10
+                }
+
+                if (rot == 30) {
+                    flip = true;
+                } else if (rot == 0) {
+                    flip = false;
+                }
+                document.getElementById("rolling").style.transform = `rotate(${rot}deg)`;
+            }, 100)
+        }
+        rollImage();
+
+
         // Remove from an array by value
         Array.prototype.remove = function () {
             var what, a = arguments,
@@ -160,20 +203,80 @@
 
         // If the user has rolled a double
         socket.on("rollDouble", (data) => {
-            document.getElementById("status").innerHTML = "You rolled a double! Roll again!";
-            document.getElementById("roll").style.display = "";
-            document.getElementById("roll").disabled = false;
-            document.getElementById("roll").setAttribute("func", "single"); // For use when emmiting to say whether to roll a single or double
+            if (data["code"] == code) {
+                console.log(data)
+                document.getElementById("round").textContent = `Current Round: ${Math.floor(data["data"]["misc"]["round"] / 2)}`;
+                document.getElementById("status").innerHTML = `${data["data"][data["roller"]]["name"]} rolled a double! ${data["data"][data["roller"]]["name"]} roll again!`;
+                document.getElementById("roll").style.display = "";
+                document.getElementById("roll").disabled = false;
+                document.getElementById("roll").setAttribute("func", "single"); // For use when emmiting to say whether to roll a single or double
+
+                document.getElementById("diestatus").style.display = "none";
+                document.getElementById("diestatus").textContent = "";
+                document.getElementById("rolling").style.display = "none";
+
+                document.getElementById("turn").textContent = `${data["data"][data["roller"]]["name"]} rolled:`;
+
+                for (let i = 1; i <= 6; i++) {
+                    document.getElementById("die" + i).style.display = "none";
+                    document.getElementById("die" + i + "-1").style.display = "none";
+                }
+
+                for (let i = 0; i < data["roll"]["rolls"].length; i++) {
+                    document.getElementById("die" + data["roll"]["rolls"][i]).style.display = "";
+                    document.getElementById("die" + data["roll"]["rolls"][i] + "-1").style.display = "";
+                }
+
+                if (data["roll"]["roll"] % 2 == 0) {
+                    document.getElementById("diestatus").style.display = "";
+                    document.getElementById("diestatus").textContent = `${data["data"][data["roller"]]["name"]} got + 10`;
+                } else {
+                    document.getElementById("diestatus").style.display = "";
+                    document.getElementById("diestatus").textContent = `${data["data"][data["roller"]]["name"]} got - 10`;
+                }
+
+                if (data["roller"] != getCookie("token")) {
+                    document.getElementById("roll").disabled = true;
+                } else {
+                    document.getElementById("roll").disabled = false;
+                }
+            }
         });
 
         // When a user rolls
         socket.on("roll", (data) => {
             // If the game is the current room's code
+            console.log(data)
             if (data["code"] == code) {
                 let turn = data["turn"];
+                let roller = data["roller"];
+                let roll = data["roll"];
                 data = data["data"];
                 document.getElementById("round").textContent = `Current Round: ${Math.floor(data["misc"]["round"] / 2)}`; // This is so each player has to roll for it to count as a round
-                document.getElementById("roll").setAttribute("func", "double"); // 
+                document.getElementById("roll").setAttribute("func", "double"); // For use when emmiting to say whether to roll a single or double
+                document.getElementById("diestatus").style.display = "none";
+                document.getElementById("diestatus").textContent = "";
+                document.getElementById("rolling").style.display = "none";
+
+                document.getElementById("turn").textContent = `${data[roller]["name"]} rolled:`;
+
+                for (let i = 1; i <= 6; i++) {
+                    document.getElementById("die" + i).style.display = "none";
+                    document.getElementById("die" + i + "-1").style.display = "none";
+                }
+
+                for (let i = 0; i < roll["rolls"].length; i++) {
+                    document.getElementById("die" + roll["rolls"][i]).style.display = "";
+                }
+
+                if (roll["roll"] % 2 == 0) {
+                    document.getElementById("diestatus").style.display = "";
+                    document.getElementById("diestatus").textContent = `${data[roller]["name"]} got + 10`;
+                } else {
+                    document.getElementById("diestatus").style.display = "";
+                    document.getElementById("diestatus").textContent = `${data[roller]["name"]} got - 10`;
+                }
+
                 let keys = Object.keys(data);
 
                 keys.remove("misc");
@@ -212,6 +315,16 @@
                 document.getElementById("score").textContent = JSON.stringify(keys)
                 document.getElementById("score").innerHTML = "";
 
+                document.getElementById("rolling").style.display = "none";
+                document.getElementById("diestatus").style.display = "none";
+                document.getElementById("turn").style.display = "none";
+
+                for (let i = 1; i <= 6; i++) {
+                    document.getElementById("die" + i).style.display = "none";
+                    document.getElementById("die" + i + "-1").style.display = "none";
+                }
+
+
                 // Set the scores list to each users name and points
                 for (let i = 0; i < keys.length; i++) {
                     document.getElementById("score").innerHTML += `<li>${data[keys[i]]["name"]}: ${data[keys[i]]["points"]}</li>`;
@@ -226,7 +339,10 @@
         });
 
         // Request from the backend the current state of the game
-        socket.emit("init", { "code": code, "token": getCookie("token") });
+        socket.emit("init", {
+            "code": code,
+            "token": getCookie("token")
+        });
 
         // When the backend returns the state
         socket.on("init", (data) => {
@@ -289,7 +405,9 @@
                 } else {
                     document.getElementById("roll").disabled = false;
                 }
-            } catch (e) { console.log(e) }
+            } catch (e) {
+                console.log(e)
+            }
         });
 
         // If the round has reached the end but the scores are the same
@@ -306,6 +424,35 @@
                 keys.remove("misc");
 
                 document.getElementById("score").innerHTML = "";
+
+                
+                document.getElementById("rolling").style.display = "none";
+                document.getElementById("diestatus").style.display = "none";
+                document.getElementById("turn").style.display = "none";
+
+                for (let i = 1; i <= 6; i++) {
+                    document.getElementById("die" + i).style.display = "none";
+                    document.getElementById("die" + i + "-1").style.display = "none";
+                }
+
+                document.getElementById("turn").textContent = `${data[roller]["name"]} rolled:`;
+
+                for (let i = 1; i <= 6; i++) {
+                    document.getElementById("die" + i).style.display = "none";
+                    document.getElementById("die" + i + "-1").style.display = "none";
+                }
+
+                for (let i = 0; i < roll["rolls"].length; i++) {
+                    document.getElementById("die" + roll["rolls"][i]).style.display = "";
+                }
+
+                if (roll["roll"] % 2 == 0) {
+                    document.getElementById("diestatus").style.display = "";
+                    document.getElementById("diestatus").textContent = `${data[roller]["name"]} got + 10`;
+                } else {
+                    document.getElementById("diestatus").style.display = "";
+                    document.getElementById("diestatus").textContent = `${data[roller]["name"]} got - 10`;
+                }
 
 
                 // Set the scores list to each users name and points
@@ -347,6 +494,7 @@
 
         document.getElementById("roll").addEventListener("click", (e) => {
             if (rollEnabled) {
+                document.getElementById("rolling").style.display = "";
                 let func = document.getElementById("roll").getAttribute("func");
                 socket.emit("roll", {
                     "code": code,

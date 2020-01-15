@@ -10,6 +10,7 @@ app.use(bodyParser.urlencoded({ // to support URL-encoded bodies
     extended: true
 }));
 app.use(cookieParser()); // Allows access to cookies
+app.use('/resources', express.static(__dirname + '/views/resources')); // When a client requests a file in /resources/* it will display the file
 
 var server = app.listen(port, () => console.log(`app listening on port ${port}!`)) // Creates the server and stores it in a var
 
@@ -69,12 +70,11 @@ if (fs.existsSync("users.json")) {
 function getDice() {
     var letters = '123456';
     var roll = 0;
-    for (var i = 0; i < 1; i++) {
-        let letter = letters[Math.floor(Math.random() * letters.length)];
 
-        roll += parseInt(letter);
-    }
-    return { "roll": roll, "isDouble": false };
+    let letter = letters[Math.floor(Math.random() * letters.length)];
+
+    roll = parseInt(letter);
+    return { "roll": roll, "isDouble": false, "rolls": [parseInt(letter)] };
 }
 
 // Used to simulate rolling a pair of Die and pass if they were the same
@@ -89,7 +89,7 @@ function getTwoDice() {
     }
 
     let roll = parseInt(first) + parseInt(second);
-    return { roll, isDouble };
+    return { "roll": roll, "isDouble": isDouble, "rolls": [parseInt(first), parseInt(second)] };
 }
 
 function isEven(n) {
@@ -115,6 +115,7 @@ app.get('/:room?', (req, res) => {
         res.sendFile(path.join(__dirname, 'views/login.html'));
     }
 });
+
 
 // When the user submits the login form
 app.post("/login", (req, res) => {
@@ -293,7 +294,6 @@ io.sockets.on('connection', (socket) => {
 
     // When a user clicks the "Roll button
     socket.on("roll", (data) => {
-        console.log(data)
 
         // If the games object does not have the room in it, add it
         if (!games.hasOwnProperty(data["code"])) {
@@ -344,14 +344,16 @@ io.sockets.on('connection', (socket) => {
             points = 0;
         }
 
+        console.log(rolled)
+
         // If they rolled a double, alert the user they need to roll again
         if (rolled["isDouble"]) {
-            socket.emit("rollDouble", "");
+            io.emit("rollDouble", { "code": data["code"], "roller": data["token"], "roll": rolled, "data": games[data["code"]] });
             return;
         }
 
         // Set the user's points to the rolled points
-        games[data["code"]][data["token"]]["points"] = points; 
+        games[data["code"]][data["token"]]["points"] = points;
 
         // If the round is undefined, set it to 1, else set it to itself + 1
         games[data["code"]]["misc"]["round"] = games[data["code"]]["misc"]["round"] == null ? 1 : games[data["code"]]["misc"]["round"] + 1;
@@ -376,7 +378,7 @@ io.sockets.on('connection', (socket) => {
 
             games[data["code"]]["misc"]["turn"] = turn;
 
-            io.emit("roll", { "code": data["code"], "data": games[data["code"]], "turn": turn });
+            io.emit("roll", { "code": data["code"], "roller": data["token"], "roll": rolled, "data": games[data["code"]], "turn": turn });
         } else {
             let winner = "";
 
@@ -417,7 +419,7 @@ io.sockets.on('connection', (socket) => {
 
                 let turn = keys[turnIndex];
 
-                io.emit("endAgain", { "code": data["code"], "data": games[data["code"]], "turn": turn });
+                io.emit("endAgain", { "code": data["code"], "roller": data["token"], "roll": rolled, "data": games[data["code"]], "turn": turn });
             }
         }
     });

@@ -3,7 +3,7 @@
 
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script type="text/javascript" src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+    <script type="text/javascript" src="/resources/socketio.js"></script>
     <style>
         html,
         body {
@@ -15,7 +15,7 @@
             line-height: 1.5;
             margin: 0;
         }
-
+        
         .container {
             display: grid;
             grid-template-columns: 1fr 0.5fr;
@@ -25,7 +25,7 @@
             align-items: stretch;
             width: 100%
         }
-
+        
         .grid-item {
             background-color: rgba(255, 255, 255, 0.8);
             border: 1px solid rgba(0, 0, 0, 0.8);
@@ -36,11 +36,11 @@
             height: 100vh;
             overflow: auto;
         }
-
+        
         .btn:hover {
             box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
         }
-
+        
         .btn {
             color: #fff !important;
             background-color: #2196F3 !important;
@@ -74,11 +74,9 @@
 
     <h2>How to use this website:</h2>
 
-    <p>To start a new game, click the "New Game" button below, you will be given a url and room code to give to your
-        other friend, on the second computer go to the url with the room code or alternativly select the game in the
-        game list below, you will both be required to log into those user accounts and you both can't use the same one.
-        When in a game you will see a button saying "Join" click it to join that specifc game, once two players have
-        joined a room the "Start" button will appear, once either party clicks the button the game will start.
+    <p>To start a new game, click the "New Game" button below, you will be given a url and room code to give to your other friend, on the second computer go to the url with the room code or alternativly select the game in the game list below, you will both
+        be required to log into those user accounts and you both can't use the same one. When in a game you will see a button saying "Join" click it to join that specifc game, once two players have joined a room the "Start" button will appear, once either
+        party clicks the button the game will start.
     </p>
 
     <input type="button" class="btn" id="createGame" value="New Game">
@@ -101,7 +99,7 @@
 
     <script>
         // Remove from an array by value
-        Array.prototype.remove = function () {
+        Array.prototype.remove = function() {
             var what, a = arguments,
                 L = a.length,
                 ax;
